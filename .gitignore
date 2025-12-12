@@ -1,0 +1,51 @@
+# ===================================
+# Spring Boot - backend
+# ===================================
+/backend-spring/backend/target/
+/backend-spring/backend/*.class
+/backend-spring/backend/.classpath
+/backend-spring/backend/.project
+/backend-spring/backend/.settings/
+/backend-spring/backend/out/
+!/backend-spring/backend/src/main/resources/application.properties
+
+# ===================================
+# React - frontend
+# ===================================
+/frontend-react/node_modules/
+/frontend-react/build/
+/frontend-react/.env
+/frontend-react/.cache/
+/frontend-react/.parcel-cache/
+
+# ===================================
+# Flask / Python
+# ===================================
+/tree-flask/__pycache__/
+/tree-flask/env/
+/tree-flask/*.pyc
+/tree-flask/.pytest_cache/
+/tree-flask/.venv/
+
+
+# ===================================
+# IDEs
+# ===================================
+*.idea/
+*.vscode/
+*.iml
+.DS_Store
+
+# ===================================
+# OS Files
+# ===================================
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# ===================================
+# Others
+# ===================================
+.env
+*.log
+

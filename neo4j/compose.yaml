@@ -1,0 +1,21 @@
+services:
+  neo4j:
+    image: neo4j:5
+    container_name: neo4j
+    ports:
+      - "7474:7474"   # interface web
+      - "7687:7687"   # Bolt pour Spring Boot
+    environment:
+      NEO4J_AUTH: "neo4j/andy231001"
+    networks:
+      - famtrees-net
+    volumes:
+      - neo4j_data:/data   # utiliser le volume nommé
+
+volumes:
+  neo4j_data:  # déclaration du volume utilisé
+
+networks:
+  famtrees-net:
+    driver: bridge
+
