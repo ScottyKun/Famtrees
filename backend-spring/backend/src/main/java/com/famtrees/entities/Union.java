@@ -1,0 +1,96 @@
+package com.famtrees.entities;
+
+import org.springframework.data.neo4j.core.schema.*;
+
+import java.time.LocalDate;
+import java.util.*;
+
+@Node("Union")
+
+public class Union {
+	@Id
+    private String id = UUID.randomUUID().toString();
+
+    private String type; // MARIAGE, UNION_LIBRE, RELIGIEUX
+
+    private LocalDate dateDebut;
+    private LocalDate dateFin;
+
+    // Participants
+    @Relationship(type = "CONJOINT_DANS", direction = Relationship.Direction.INCOMING)
+    private List<Personne> conjoints = new ArrayList<>();
+
+    // Famille formée par cette union
+    @Relationship(type = "FORME_FAMILLE", direction = Relationship.Direction.OUTGOING)
+    private Famille famille;
+
+    
+    public Union(String id, String type, LocalDate dateDebut, LocalDate dateFin, List<Personne> conjoints,
+    			Famille famille) {
+		super();
+		this.id = id;
+		this.type = type;
+		this.dateDebut = dateDebut;
+		this.dateFin = dateFin;
+		this.conjoints = conjoints;
+		this.famille = famille;
+	}
+
+	public Union() {
+		super();
+		// TODO Auto-generated constructor stub
+	}
+
+	//
+	public String getId() {
+		return id;
+	}
+
+	public void setId(String id) {
+		this.id = id;
+	}
+
+	public String getType() {
+		return type;
+	}
+
+	public void setType(String type) {
+		this.type = type;
+	}
+
+	public LocalDate getDateDebut() {
+		return dateDebut;
+	}
+
+	public void setDateDebut(LocalDate dateDebut) {
+		this.dateDebut = dateDebut;
+	}
+
+	public LocalDate getDateFin() {
+		return dateFin;
+	}
+
+	public void setDateFin(LocalDate dateFin) {
+		this.dateFin = dateFin;
+	}
+
+	public List<Personne> getConjoints() {
+		return conjoints;
+	}
+
+	public void setConjoints(List<Personne> conjoints) {
+		this.conjoints = conjoints;
+	}
+
+	public Famille getFamille() {
+		return famille;
+	}
+
+	public void setFamille(Famille famille) {
+		this.famille = famille;
+	}
+    
+  
+    
+
+}
