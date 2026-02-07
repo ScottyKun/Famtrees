@@ -9,7 +9,8 @@ import java.util.*;
 
 public class Famille {
 	@Id
-    private String id = UUID.randomUUID().toString();
+	@GeneratedValue
+    private String id;
 
     private String nom;
     

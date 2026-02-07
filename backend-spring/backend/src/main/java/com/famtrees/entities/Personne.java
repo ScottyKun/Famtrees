@@ -10,7 +10,8 @@ import java.util.*;
 @Node("Personne")
 public class Personne {
 	@Id
-    private String id = UUID.randomUUID().toString();
+	@GeneratedValue
+    private String id;
 
     private String prenom;
     private String nom;
