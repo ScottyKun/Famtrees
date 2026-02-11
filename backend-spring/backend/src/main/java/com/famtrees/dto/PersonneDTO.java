@@ -24,11 +24,11 @@ public class PersonneDTO {
     private List<String> enfantsIds;
     private List<String> unionsIds;
     private String familleId;
-    
+    private String unionNaissId;
     
     
     public PersonneDTO(String id, String prenom, String nom, String sexe, LocalDate dateNaissance, LocalDate dateDeces,
-			List<String> enfantsIds, List<String> unionsIds, String familleId) {
+			List<String> enfantsIds, List<String> unionsIds, String familleId, String unionNaissId ) {
 		super();
 		this.id = id;
 		this.prenom = prenom;
@@ -39,6 +39,7 @@ public class PersonneDTO {
 		this.enfantsIds = enfantsIds;
 		this.unionsIds = unionsIds;
 		this.familleId = familleId;
+		this.unionNaissId= unionNaissId;
 	}
     
 	public PersonneDTO() {
@@ -100,5 +101,14 @@ public class PersonneDTO {
 	public void setFamilleId(String familleId) {
 		this.familleId = familleId;
 	}
+
+	public String getUnionNaissId() {
+		return unionNaissId;
+	}
+
+	public void setUnionNaissId(String unionNaissId) {
+		this.unionNaissId = unionNaissId;
+	}
+	
 	
 }

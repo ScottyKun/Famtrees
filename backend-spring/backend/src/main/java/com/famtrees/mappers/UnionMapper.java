@@ -23,6 +23,11 @@ public class UnionMapper {
         String familleId = entity.getFamille() != null
                 ? entity.getFamille().getId()
                 : null;
+        
+        List<String> enfantsIds = entity.getEnfants()
+                .stream()
+                .map(Personne::getId)
+                .toList();
 
         return new UnionDTO(
                 entity.getId(),
@@ -30,7 +35,8 @@ public class UnionMapper {
                 entity.getDateDebut(),
                 entity.getDateFin(),
                 conjointsIds,
-                familleId
+                familleId,
+                enfantsIds
         );
     }
 
@@ -43,7 +49,8 @@ public class UnionMapper {
                 dto.getDateDebut(),
                 dto.getDateFin(),
                 new ArrayList<>(), // conjoints -> service
-                null               // famille -> service
+                null,               // famille -> service
+                new ArrayList<>()
         );
     }
 }

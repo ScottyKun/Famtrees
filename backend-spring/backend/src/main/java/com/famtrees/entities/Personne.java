@@ -18,28 +18,7 @@ public class Personne {
     private String sexe; // M, F,
     private LocalDate dateNaissance;
     private LocalDate dateDeces;
-    
-
-    public Personne(String id, String prenom, String nom, String sexe, LocalDate dateNaissance, LocalDate dateDeces,
-			List<Personne> enfants, List<Union> unions, Famille famille) {
-		super();
-		this.id = id;
-		this.prenom = prenom;
-		this.nom = nom;
-		this.sexe = sexe;
-		this.dateNaissance = dateNaissance;
-		this.dateDeces = dateDeces;
-		this.enfants = enfants;
-		this.unions = unions;
-		this.famille = famille;
-	}
-
-	public Personne() {
-		super();
-		// TODO Auto-generated constructor stub
-	}
-
-	// Parent -> Enfant
+    // Parent -> Enfant
     @Relationship(type = "PARENT_DE", direction = Relationship.Direction.OUTGOING)
     private List<Personne> enfants = new ArrayList<>();
 
@@ -50,6 +29,39 @@ public class Personne {
     // Appartenance familiale
     @Relationship(type = "MEMBRE_DE", direction = Relationship.Direction.OUTGOING)
     private Famille famille;
+    
+    //Union -> enfant
+    @Relationship(type = "A_ENFANT", direction = Relationship.Direction.INCOMING)
+    private Union unionNaissance;
+    
+
+    public Personne(String id, String prenom, String nom, String sexe, LocalDate dateNaissance, LocalDate dateDeces,
+			List<Personne> enfants, List<Union> unions, Famille famille, Union unionNaiss) {
+		super();
+		this.id = id;
+		this.prenom = prenom;
+		this.nom = nom;
+		this.sexe = sexe;
+		this.dateNaissance = dateNaissance;
+		this.dateDeces = dateDeces;
+		this.enfants = enfants;
+		this.unions = unions;
+		this.famille = famille;
+		this.unionNaissance = unionNaiss;
+	}
+
+	public Union getUnionNaissance() {
+		return unionNaissance;
+	}
+
+	public void setUnionNaissance(Union unionNaissance) {
+		this.unionNaissance = unionNaissance;
+	}
+
+	public Personne() {
+		super();
+		// TODO Auto-generated constructor stub
+	}
 
     
 	public String getId() {

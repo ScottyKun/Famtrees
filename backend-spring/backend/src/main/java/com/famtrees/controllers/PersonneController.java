@@ -83,5 +83,11 @@ public class PersonneController {
     public PersonneDTO removeUnion(@PathVariable String id, @PathVariable String unionId) {
         return PersonneMapper.toDTO(personneService.removeUnion(id, unionId));
     }
+    
+    @PostMapping("/{id}/familles")
+    public PersonneDTO joinFamily(@PathVariable String id, @RequestBody FamilleDTO familleDto) {
+        Famille f = FamilleMapper.toEntity(familleDto);
+        return PersonneMapper.toDTO(personneService.joinFamily(id, f));
+    }
 
 }

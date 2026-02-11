@@ -29,6 +29,10 @@ public class PersonneMapper {
         String familleId = entity.getFamille() != null
                 ? entity.getFamille().getId()
                 : null;
+        
+        String unionNaissId = entity.getUnionNaissance() !=null
+        		? entity.getUnionNaissance().getId()
+        		: null;
 
         return new PersonneDTO(
                 entity.getId(),
@@ -39,7 +43,8 @@ public class PersonneMapper {
                 entity.getDateDeces(),
                 enfantsIds,
                 unionsIds,
-                familleId
+                familleId,
+                unionNaissId
         );
     }
 
@@ -55,7 +60,8 @@ public class PersonneMapper {
                 dto.getDateDeces(),
                 new ArrayList<>(), // enfants -> gérés dans le service
                 new ArrayList<>(), // unions -> gérés dans le service
-                null               // famille -> gérée dans le service
+                null,               // famille -> gérée dans le service
+                null
         );
     }
 }

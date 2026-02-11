@@ -20,10 +20,10 @@ public class UnionDTO {
     // Relations
     private List<String> conjointsIds;
     private String familleId;
-    
+    private List<String> enfantsIds;
     
 	public UnionDTO(String id, String type, LocalDate dateDebut, LocalDate dateFin, List<String> conjointsIds,
-			String familleId) {
+			String familleId, List<String> enfantsIds) {
 		super();
 		this.id = id;
 		this.type = type;
@@ -31,6 +31,7 @@ public class UnionDTO {
 		this.dateFin = dateFin;
 		this.conjointsIds = conjointsIds;
 		this.familleId = familleId;
+		this.enfantsIds = enfantsIds;
 	}
 	public UnionDTO() {
 		super();
@@ -72,6 +73,12 @@ public class UnionDTO {
 	}
 	public void setFamilleId(String familleId) {
 		this.familleId = familleId;
+	}
+	public List<String> getEnfantsIds() {
+		return enfantsIds;
+	}
+	public void setEnfantsIds(List<String> enfantsIds) {
+		this.enfantsIds = enfantsIds;
 	}
     
     

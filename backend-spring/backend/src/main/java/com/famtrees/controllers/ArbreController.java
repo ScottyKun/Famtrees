@@ -22,7 +22,7 @@ public class ArbreController {
     @GetMapping("/{racineId}")
     public ArbreDTO getArbre(
             @PathVariable String racineId,
-            @RequestParam(defaultValue = "3") int profondeur) {
-        return arbreService.buildArbre(racineId, profondeur);
+            @RequestParam(defaultValue = "3") int depth) {
+        return arbreService.buildArbre(racineId, depth);
     }
 }

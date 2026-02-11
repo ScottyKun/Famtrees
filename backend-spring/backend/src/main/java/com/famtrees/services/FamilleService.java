@@ -31,7 +31,6 @@ public class FamilleService {
     public Famille updateFamille(String id, Famille updated) {
         return familleRepository.findById(id).map(f -> {
             f.setNom(updated.getNom());
-            f.setMembres(updated.getMembres());
             return familleRepository.save(f);
         }).orElseThrow(() -> new RuntimeException("Famille non trouvée"));
     }
@@ -48,9 +47,6 @@ public class FamilleService {
         return familleRepository.findById(id);
     }
 
-    public Optional<Famille> getFamilleWithMembres(String id) {
-        return familleRepository.findWithMembresById(id);
-    }
 
     public Optional<Famille> findByNom(String nom) {
         return familleRepository.findByNom(nom);
@@ -60,12 +56,28 @@ public class FamilleService {
     public Famille addMember(String familleId, Personne personne) {
         Famille famille = familleRepository.findById(familleId)
                 .orElseThrow(() -> new RuntimeException("Famille non trouvée"));
-
-        if (!famille.getMembres().contains(personne)) {
-            famille.getMembres().add(personne);
-            personne.setFamille(famille);
-            personneRepository.save(personne);
+        
+        Personne p;
+        
+        if (personne.getId() != null) {
+            p = personneRepository.findById(personne.getId())
+                    .orElseThrow(() -> new RuntimeException("Personne non trouvée"));
         }
+        //nouvelle personne
+        else {
+            p = personne;
+        }
+        
+        if (p.getFamille() != null &&
+                p.getFamille().getId().equals(famille.getId())) {
+                return famille; // déjà membre
+            }
+
+        famille.getMembres().add(p);
+        p.setFamille(famille);
+
+        personneRepository.save(p);
+            
         return familleRepository.save(famille);
     }
 

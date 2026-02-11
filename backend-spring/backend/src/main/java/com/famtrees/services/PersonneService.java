@@ -55,10 +55,6 @@ public class PersonneService {
         return personneRepository.findById(id);
     }
 
-    public Optional<Personne> getPersonneWithRelations(String id) {
-        return personneRepository.findWithRelationsById(id);
-    }
-
     // Recherches
     public List<Personne> findByNom(String nom) {
         return personneRepository.findByNom(nom);
@@ -68,23 +64,31 @@ public class PersonneService {
         return personneRepository.findByPrenomAndNom(prenom, nom);
     }
 
-    // Généalogie
-    public List<Personne> getDescendants(String id, int depth) {
-        return personneRepository.findDescendants(id, depth);
-    }
-
-    public List<Personne> getAncestors(String id, int depth) {
-        return personneRepository.findAncestors(id, depth);
-    }
     
     // Enfants
     public Personne addEnfant(String parentId, Personne enfant) {
         Personne parent = personneRepository.findById(parentId)
                 .orElseThrow(() -> new RuntimeException("Parent non trouvé"));
-        enfant = personneRepository.save(enfant); // On sauvegarde l'enfant
+        
+        Personne e;
+        
+        if (enfant.getId() != null) {
+            e = personneRepository.findById(enfant.getId())
+                    .orElseThrow(() -> new RuntimeException("Enfant non trouvé"));
+        } 
+        else {
+            e = personneRepository.save(enfant);
+        }
+        
+        if(parent.getEnfants().stream().anyMatch(n -> n.getId().equals(e.getId()))) {
+        	return parent;
+        }
+      
         parent.getEnfants().add(enfant);          // On crée la relation PARENT_DE
         return personneRepository.save(parent);
     }
+   
+
 
     public Personne removeEnfant(String parentId, String enfantId) {
         Personne parent = personneRepository.findById(parentId)
@@ -119,14 +123,24 @@ public class PersonneService {
         Personne personne = personneRepository.findById(personneId)
                 .orElseThrow(() -> new RuntimeException("Personne non trouvée"));
 
-        if (famille.getId() == null || !familleRepository.existsById(famille.getId())) {
-            famille = familleRepository.save(famille);
+        Famille f;
+        
+        if (famille.getId() != null) {
+            f = familleRepository.findById(famille.getId())
+                    .orElseThrow(() -> new RuntimeException("Famille non trouvée"));
+        } else {
+            f = familleRepository.save(famille);
         }
+        
+        if (personne.getFamille() != null &&
+                personne.getFamille().getId().equals(famille.getId())) {
+                return personne; // déjà membre
+            }
 
-        personne.setFamille(famille);
-        famille.getMembres().add(personne);
-        familleRepository.save(famille);
-
+        personne.setFamille(f);
+       
         return personneRepository.save(personne);
     }
+    
+
 }

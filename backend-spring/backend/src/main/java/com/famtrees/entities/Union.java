@@ -24,10 +24,14 @@ public class Union {
     // Famille formée par cette union
     @Relationship(type = "FORME_FAMILLE", direction = Relationship.Direction.OUTGOING)
     private Famille famille;
+    
+    // Enfants de l'union
+    @Relationship(type = "A_ENFANT", direction = Relationship.Direction.OUTGOING)
+    private List<Personne> enfants = new ArrayList<>();
 
     
     public Union(String id, String type, LocalDate dateDebut, LocalDate dateFin, List<Personne> conjoints,
-    			Famille famille) {
+    			Famille famille, List<Personne> enfants) {
 		super();
 		this.id = id;
 		this.type = type;
@@ -35,6 +39,7 @@ public class Union {
 		this.dateFin = dateFin;
 		this.conjoints = conjoints;
 		this.famille = famille;
+		this.enfants = enfants;
 	}
 
 	public Union() {
@@ -89,6 +94,14 @@ public class Union {
 
 	public void setFamille(Famille famille) {
 		this.famille = famille;
+	}
+
+	public List<Personne> getEnfants() {
+		return enfants;
+	}
+
+	public void setEnfants(List<Personne> enfants) {
+		this.enfants = enfants;
 	}
     
   

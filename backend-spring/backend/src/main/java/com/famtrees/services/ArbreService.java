@@ -6,6 +6,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import org.springframework.data.neo4j.core.Neo4jTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -24,19 +25,47 @@ import com.famtrees.mappers.UnionMapper;
 @Transactional
 public class ArbreService {
 
+    private final Neo4jTemplate template;
     private final PersonneService personneService;
 
-    public ArbreService(PersonneService personneService) {
+    public ArbreService(Neo4jTemplate template, PersonneService personneService) {
+        this.template = template;
         this.personneService = personneService;
+    }
+    
+    public List<Personne> findDescendants(String elementId, int depth) {
+        String query = String.format("""
+            MATCH (p:Personne)
+            WHERE elementId(p) = '%s'
+            MATCH (p)-[:PARENT_DE*1..%d]->(descendant)
+            RETURN collect(DISTINCT descendant) AS descendants
+            """, elementId, depth);
+
+        return template.findAll(query, Personne.class)
+                       .stream()
+                       .collect(Collectors.toList());
+    }
+
+    public List<Personne> findAncestors(String elementId, int depth) {
+        String query = String.format("""
+            MATCH (p:Personne)
+            WHERE elementId(p) = '%s'
+            MATCH (p)<-[:PARENT_DE*1..%d]-(ancestor)
+            RETURN collect(DISTINCT ancestor) AS ancestors
+            """, elementId, depth);
+
+        return template.findAll(query, Personne.class)
+                       .stream()
+                       .collect(Collectors.toList());
     }
 
     public ArbreDTO buildArbre(String racineId, int profondeur) {
-        Personne racine = personneService.getPersonneWithRelations(racineId)
+        Personne racine = personneService.getPersonneById(racineId)
                 .orElseThrow(() -> new RuntimeException("Personne racine non trouvée"));
 
         // Descendants et ascendants avec profondeur
-        List<Personne> descendants = personneService.getDescendants(racineId, profondeur);
-        List<Personne> ascendants = personneService.getAncestors(racineId, profondeur);
+        List<Personne> descendants = this.findDescendants(racineId, profondeur);
+        List<Personne> ascendants =this.findAncestors(racineId, profondeur);
 
         List<Personne> toutesPersonnes = new ArrayList<>();
         toutesPersonnes.add(racine);
