@@ -10,6 +10,8 @@ public class UnionDTO {
     private String id;
 
     private String type; // MARIAGE, UNION_LIBRE, RELIGIEUX
+    
+    private String libelle;
 
     @JsonFormat(pattern = "yyyy-MM-dd")
     private LocalDate dateDebut;
@@ -23,7 +25,7 @@ public class UnionDTO {
     private List<String> enfantsIds;
     
 	public UnionDTO(String id, String type, LocalDate dateDebut, LocalDate dateFin, List<String> conjointsIds,
-			String familleId, List<String> enfantsIds) {
+			String familleId, List<String> enfantsIds, String libelle) {
 		super();
 		this.id = id;
 		this.type = type;
@@ -32,6 +34,7 @@ public class UnionDTO {
 		this.conjointsIds = conjointsIds;
 		this.familleId = familleId;
 		this.enfantsIds = enfantsIds;
+		this.libelle = libelle;
 	}
 	public UnionDTO() {
 		super();
@@ -79,6 +82,12 @@ public class UnionDTO {
 	}
 	public void setEnfantsIds(List<String> enfantsIds) {
 		this.enfantsIds = enfantsIds;
+	}
+	public String getLibelle() {
+		return libelle;
+	}
+	public void setLibelle(String libelle) {
+		this.libelle = libelle;
 	}
     
     

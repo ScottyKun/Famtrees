@@ -1,5 +1,6 @@
 package com.famtrees.services;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -84,7 +85,7 @@ public class PersonneService {
         	return parent;
         }
       
-        parent.getEnfants().add(enfant);          // On crée la relation PARENT_DE
+        parent.getEnfants().add(e);          // On crée la relation PARENT_DE
         return personneRepository.save(parent);
     }
    
@@ -102,12 +103,15 @@ public class PersonneService {
         Personne personne = personneRepository.findById(personneId)
                 .orElseThrow(() -> new RuntimeException("Personne non trouvée"));
 
-        // On sauvegarde l'union si elle n'existe pas encore
-        if (union.getId() == null || !unionRepository.existsById(union.getId())) {
-            union = unionRepository.save(union);
+        Union u;
+        
+        if (union.getId() != null ) {
+            u = unionRepository.findById(union.getId()).orElseThrow(() -> new RuntimeException("Union non trouvée"));
+        }else {
+        	u = unionRepository.save(union);
         }
 
-        personne.getUnions().add(union);
+        personne.getUnions().add(u);
         return personneRepository.save(personne);
     }
 
@@ -132,12 +136,18 @@ public class PersonneService {
             f = familleRepository.save(famille);
         }
         
-        if (personne.getFamille() != null &&
-                personne.getFamille().getId().equals(famille.getId())) {
+        if (personne.getFamille() == null) {
+            personne.setFamille(new ArrayList<>());
+        }
+
+        //Vérifier si déjà membre
+        for (Famille fam : personne.getFamille()) {
+            if (fam.getId().equals(f.getId())) {
                 return personne; // déjà membre
             }
+        }
 
-        personne.setFamille(f);
+        personne.getFamille().add(f);
        
         return personneRepository.save(personne);
     }

@@ -23,6 +23,6 @@ public class ArbreController {
     public ArbreDTO getArbre(
             @PathVariable String racineId,
             @RequestParam(defaultValue = "3") int depth) {
-        return arbreService.buildArbre(racineId, depth);
+        return arbreService.buildArbreComplet(racineId, depth);
     }
 }

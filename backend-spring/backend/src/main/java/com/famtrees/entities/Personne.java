@@ -28,7 +28,7 @@ public class Personne {
 
     // Appartenance familiale
     @Relationship(type = "MEMBRE_DE", direction = Relationship.Direction.OUTGOING)
-    private Famille famille;
+    private List<Famille> famille;
     
     //Union -> enfant
     @Relationship(type = "A_ENFANT", direction = Relationship.Direction.INCOMING)
@@ -36,7 +36,7 @@ public class Personne {
     
 
     public Personne(String id, String prenom, String nom, String sexe, LocalDate dateNaissance, LocalDate dateDeces,
-			List<Personne> enfants, List<Union> unions, Famille famille, Union unionNaiss) {
+			List<Personne> enfants, List<Union> unions, List<Famille> famille, Union unionNaiss) {
 		super();
 		this.id = id;
 		this.prenom = prenom;
@@ -128,11 +128,11 @@ public class Personne {
 		this.unions = unions;
 	}
 
-	public Famille getFamille() {
+	public List<Famille> getFamille() {
 		return famille;
 	}
 
-	public void setFamille(Famille famille) {
+	public void setFamille(List<Famille> famille) {
 		this.famille = famille;
 	}
     

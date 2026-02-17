@@ -36,7 +36,8 @@ public class UnionMapper {
                 entity.getDateFin(),
                 conjointsIds,
                 familleId,
-                enfantsIds
+                enfantsIds,
+                entity.getLibelle()
         );
     }
 
@@ -50,7 +51,8 @@ public class UnionMapper {
                 dto.getDateFin(),
                 new ArrayList<>(), // conjoints -> service
                 null,               // famille -> service
-                new ArrayList<>()
+                new ArrayList<>(),
+                dto.getLibelle()
         );
     }
 }

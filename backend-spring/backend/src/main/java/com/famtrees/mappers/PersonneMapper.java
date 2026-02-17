@@ -1,6 +1,7 @@
 package com.famtrees.mappers;
 
 import com.famtrees.dto.PersonneDTO;
+import com.famtrees.entities.Famille;
 import com.famtrees.entities.Personne;
 import com.famtrees.entities.Union;
 
@@ -26,9 +27,12 @@ public class PersonneMapper {
             }
         }
 
-        String familleId = entity.getFamille() != null
-                ? entity.getFamille().getId()
-                : null;
+        List<String> familleIds = new ArrayList<>();
+        if (entity.getFamille() != null) {
+            for (Famille famille : entity.getFamille()) {
+                familleIds.add(famille.getId());
+            }
+        }
         
         String unionNaissId = entity.getUnionNaissance() !=null
         		? entity.getUnionNaissance().getId()
@@ -43,7 +47,7 @@ public class PersonneMapper {
                 entity.getDateDeces(),
                 enfantsIds,
                 unionsIds,
-                familleId,
+                familleIds,
                 unionNaissId
         );
     }
@@ -60,7 +64,7 @@ public class PersonneMapper {
                 dto.getDateDeces(),
                 new ArrayList<>(), // enfants -> gérés dans le service
                 new ArrayList<>(), // unions -> gérés dans le service
-                null,               // famille -> gérée dans le service
+                new ArrayList<>(),               // famille -> gérée dans le service
                 null
         );
     }

@@ -1,5 +1,6 @@
 package com.famtrees.services;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -68,13 +69,20 @@ public class FamilleService {
             p = personne;
         }
         
-        if (p.getFamille() != null &&
-                p.getFamille().getId().equals(famille.getId())) {
+        if (p.getFamille() == null) {
+            p.setFamille(new ArrayList<>());
+        }
+
+        //Vérifier si déjà membre
+        for (Famille f : p.getFamille()) {
+            if (f.getId().equals(famille.getId())) {
                 return famille; // déjà membre
             }
+        }
+
 
         famille.getMembres().add(p);
-        p.setFamille(famille);
+        p.getFamille().add(famille);
 
         personneRepository.save(p);
             

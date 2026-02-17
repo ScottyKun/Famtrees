@@ -40,6 +40,7 @@ public class UnionService {
             u.setType(updated.getType());
             u.setDateDebut(updated.getDateDebut());
             u.setDateFin(updated.getDateFin());
+            u.setLibelle(updated.getLibelle());
             return unionRepository.save(u);
         }).orElseThrow(() -> new RuntimeException("Union non trouvée"));
     }

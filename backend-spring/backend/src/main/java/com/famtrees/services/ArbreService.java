@@ -3,128 +3,144 @@ package com.famtrees.services;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
-import java.util.stream.Collectors;
-
-import org.springframework.data.neo4j.core.Neo4jTemplate;
+import org.springframework.data.neo4j.core.Neo4jClient;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.neo4j.driver.types.Node;
+
 
 import com.famtrees.dto.ArbreDTO;
 import com.famtrees.dto.EdgeDTO;
-import com.famtrees.dto.FamilleDTO;
 import com.famtrees.dto.NodeDTO;
-import com.famtrees.dto.PersonneDTO;
-import com.famtrees.dto.UnionDTO;
-import com.famtrees.entities.Famille;
-import com.famtrees.entities.Personne;
-import com.famtrees.entities.Union;
-import com.famtrees.mappers.FamilleMapper;
-import com.famtrees.mappers.PersonneMapper;
-import com.famtrees.mappers.UnionMapper;
 
 @Service
 @Transactional
 public class ArbreService {
 
-    private final Neo4jTemplate template;
-    private final PersonneService personneService;
+	private final Neo4jClient client;
 
-    public ArbreService(Neo4jTemplate template, PersonneService personneService) {
-        this.template = template;
-        this.personneService = personneService;
+    public ArbreService(Neo4jClient neo4jClient) {
+        this.client = neo4jClient;
     }
-    
-    public List<Personne> findDescendants(String elementId, int depth) {
+
+    public ArbreDTO buildArbreComplet(String racineElementId, int profondeur) {
+
         String query = String.format("""
-            MATCH (p:Personne)
-            WHERE elementId(p) = '%s'
-            MATCH (p)-[:PARENT_DE*1..%d]->(descendant)
-            RETURN collect(DISTINCT descendant) AS descendants
-            """, elementId, depth);
+            MATCH (root:Personne)
+            WHERE elementId(root) = $id
+            
+            OPTIONAL MATCH (root)-[:PARENT_DE*0..%d]-(relative:Personne)
+            WITH collect(DISTINCT root) + collect(DISTINCT relative) AS personnes
+            
+            UNWIND personnes AS p
+            
+            OPTIONAL MATCH (p)-[:CONJOINT_DANS]->(u:Union)
+            OPTIONAL MATCH (u)-[:A_ENFANT]->(child:Personne)
+            OPTIONAL MATCH (u)-[:FORME_FAMILLE]->(f:Famille)
+            OPTIONAL MATCH (f)<-[:MEMBRE_DE]-(member:Personne)
 
-        return template.findAll(query, Personne.class)
-                       .stream()
-                       .collect(Collectors.toList());
-    }
-
-    public List<Personne> findAncestors(String elementId, int depth) {
-        String query = String.format("""
-            MATCH (p:Personne)
-            WHERE elementId(p) = '%s'
-            MATCH (p)<-[:PARENT_DE*1..%d]-(ancestor)
-            RETURN collect(DISTINCT ancestor) AS ancestors
-            """, elementId, depth);
-
-        return template.findAll(query, Personne.class)
-                       .stream()
-                       .collect(Collectors.toList());
-    }
-
-    public ArbreDTO buildArbre(String racineId, int profondeur) {
-        Personne racine = personneService.getPersonneById(racineId)
-                .orElseThrow(() -> new RuntimeException("Personne racine non trouvée"));
-
-        // Descendants et ascendants avec profondeur
-        List<Personne> descendants = this.findDescendants(racineId, profondeur);
-        List<Personne> ascendants =this.findAncestors(racineId, profondeur);
-
-        List<Personne> toutesPersonnes = new ArrayList<>();
-        toutesPersonnes.add(racine);
-        toutesPersonnes.addAll(descendants);
-        toutesPersonnes.addAll(ascendants);
+            RETURN DISTINCT p, u, child, f, member
+        """, profondeur);
 
         Set<NodeDTO> nodes = new HashSet<>();
         Set<EdgeDTO> edges = new HashSet<>();
-        
-     // --- PERSONNES ---
-        for (Personne p : toutesPersonnes) {
 
-            Map<String, Object> data = new HashMap<>();
-            data.put("prenom", p.getPrenom());
-            data.put("nom", p.getNom());
-            data.put("sexe", p.getSexe());
-            data.put("dateNaissance", p.getDateNaissance());
+        client.query(query)
+                .bind(racineElementId).to("id")
+                .fetch()
+                .all()
+                .forEach(record -> {
 
-            nodes.add(new NodeDTO(
-                    p.getId(),
-                    p.getPrenom() + " " + p.getNom(),
-                    "PERSONNE",
-                    data
-            ));
+                    addPersonNode(record.get("p"), nodes);
+                    addPersonNode(record.get("child"), nodes);
+                    addPersonNode(record.get("member"), nodes);
+                    addUnionNode(record.get("u"), nodes);
+                    addFamilleNode(record.get("f"), nodes);
 
-            // Relations PARENT_DE
-            for (Personne enfant : p.getEnfants()) {
-                if (toutesPersonnes.contains(enfant)) {
-                    edges.add(new EdgeDTO(
-                            p.getId(),
-                            enfant.getId(),
-                            "PARENT_DE"
-                    ));
-                }
-            }
+                    addEdge(record.get("p"), record.get("u"), "CONJOINT_DANS", edges);
+                    addEdge(record.get("u"), record.get("child"), "A_ENFANT", edges);
+                    addEdge(record.get("u"), record.get("f"), "FORME_FAMILLE", edges);
+                    addEdge(record.get("member"), record.get("f"), "MEMBRE_DE", edges);
+                });
 
-            // Relations UNION
-            for (Union u : p.getUnions()) {
-                nodes.add(new NodeDTO(
-                        u.getId(),
-                        "Union",
-                        "UNION",
-                        Map.of()
-                ));
-
-                edges.add(new EdgeDTO(
-                        p.getId(),
-                        u.getId(),
-                        "CONJOINT_DANS"
-                ));
-            }
-        }
-
-        return new ArbreDTO(racineId, profondeur, new ArrayList<>(nodes), new ArrayList<>(edges));
-
+        return new ArbreDTO(
+                racineElementId,
+                profondeur,
+                new ArrayList<>(nodes),
+                new ArrayList<>(edges)
+        );
     }
+
+    // =========================
+    // Méthodes utilitaires
+    // =========================
+
+    private void addPersonNode(Object nodeObj, Set<NodeDTO> nodes) {
+        if (nodeObj == null) return;
+
+        Node node = (Node) nodeObj;
+
+        Map<String, Object> data = new HashMap<>();
+        data.put("prenom", node.get("prenom").asString(null));
+        data.put("nom", node.get("nom").asString(null));
+        data.put("sexe", node.get("sexe").asString(null));
+        data.put("dateNaissance", node.get("dateNaissance").asObject());
+
+
+        nodes.add(new NodeDTO(
+                node.elementId(),
+                node.get("prenom").asString("") + " " + node.get("nom").asString(""),
+                "PERSONNE",
+                data
+        ));
+    }
+
+
+    private void addUnionNode(Object nodeObj, Set<NodeDTO> nodes) {
+        if (nodeObj == null) return;
+
+        Node node = (Node) nodeObj;
+
+        Map<String, Object> data = new HashMap<>();
+        data.put("type", node.get("type").asString(null));
+        data.put("dateDebut", node.get("dateDebut").asObject());
+
+        nodes.add(new NodeDTO(
+                node.elementId(),
+                "Union",
+                "UNION",
+                data
+        ));
+    }
+
+
+    private void addFamilleNode(Object nodeObj, Set<NodeDTO> nodes) {
+        if (nodeObj == null) return;
+
+        Node node = (Node) nodeObj;
+
+        nodes.add(new NodeDTO(
+                node.elementId(),
+                "Famille",
+                "FAMILLE",
+                Map.of()
+        ));
+    }
+
+
+    private void addEdge(Object fromObj, Object toObj, String type, Set<EdgeDTO> edges) {
+        if (fromObj == null || toObj == null) return;
+
+        Node from = (Node) fromObj;
+        Node to = (Node) toObj;
+
+        edges.add(new EdgeDTO(
+                from.elementId(),
+                to.elementId(),
+                type
+        ));
+    }
+
 }

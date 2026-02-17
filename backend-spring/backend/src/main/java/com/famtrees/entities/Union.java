@@ -13,8 +13,18 @@ public class Union {
     private String id;
 
     private String type; // MARIAGE, UNION_LIBRE, RELIGIEUX
+    
+    private String libelle;
 
-    private LocalDate dateDebut;
+    public String getLibelle() {
+		return libelle;
+	}
+
+	public void setLibelle(String libelle) {
+		this.libelle = libelle;
+	}
+
+	private LocalDate dateDebut;
     private LocalDate dateFin;
 
     // Participants
@@ -31,7 +41,7 @@ public class Union {
 
     
     public Union(String id, String type, LocalDate dateDebut, LocalDate dateFin, List<Personne> conjoints,
-    			Famille famille, List<Personne> enfants) {
+    			Famille famille, List<Personne> enfants, String libelle) {
 		super();
 		this.id = id;
 		this.type = type;
@@ -40,6 +50,7 @@ public class Union {
 		this.conjoints = conjoints;
 		this.famille = famille;
 		this.enfants = enfants;
+		this.libelle = libelle;
 	}
 
 	public Union() {

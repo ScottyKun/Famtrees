@@ -23,12 +23,12 @@ public class PersonneDTO {
     // Relations
     private List<String> enfantsIds;
     private List<String> unionsIds;
-    private String familleId;
+    private List<String> familleId;
     private String unionNaissId;
     
     
     public PersonneDTO(String id, String prenom, String nom, String sexe, LocalDate dateNaissance, LocalDate dateDeces,
-			List<String> enfantsIds, List<String> unionsIds, String familleId, String unionNaissId ) {
+			List<String> enfantsIds, List<String> unionsIds, List<String>  familleId, String unionNaissId ) {
 		super();
 		this.id = id;
 		this.prenom = prenom;
@@ -95,10 +95,10 @@ public class PersonneDTO {
 	public void setUnionsIds(List<String> unionsIds) {
 		this.unionsIds = unionsIds;
 	}
-	public String getFamilleId() {
+	public List<String>  getFamilleId() {
 		return familleId;
 	}
-	public void setFamilleId(String familleId) {
+	public void setFamilleId(List<String>  familleId) {
 		this.familleId = familleId;
 	}
 
