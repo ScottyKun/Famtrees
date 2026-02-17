@@ -10,27 +10,19 @@ public class ArbreDTO {
 
     private Integer profondeur; // Nombre de générations à remonter / descendre
 
-    private List<PersonneDTO> personnes;
-    private List<UnionDTO> unions;
-    private List<FamilleDTO> familles;
-    
-    
-    
-	public ArbreDTO(String racineId, Integer profondeur, List<PersonneDTO> personnes, List<UnionDTO> unions,
-			List<FamilleDTO> familles) {
+    private List<NodeDTO> nodes;
+    private List<EdgeDTO> edges;
+	public ArbreDTO(String racineId, Integer profondeur, List<NodeDTO> nodes, List<EdgeDTO> edges) {
 		super();
 		this.racineId = racineId;
 		this.profondeur = profondeur;
-		this.personnes = personnes;
-		this.unions = unions;
-		this.familles = familles;
+		this.nodes = nodes;
+		this.edges = edges;
 	}
-	
 	public ArbreDTO() {
 		super();
 		// TODO Auto-generated constructor stub
 	}
-	
 	public String getRacineId() {
 		return racineId;
 	}
@@ -43,24 +35,17 @@ public class ArbreDTO {
 	public void setProfondeur(Integer profondeur) {
 		this.profondeur = profondeur;
 	}
-	public List<PersonneDTO> getPersonnes() {
-		return personnes;
+	public List<NodeDTO> getNodes() {
+		return nodes;
 	}
-	public void setPersonnes(List<PersonneDTO> personnes) {
-		this.personnes = personnes;
+	public void setNodes(List<NodeDTO> nodes) {
+		this.nodes = nodes;
 	}
-	public List<UnionDTO> getUnions() {
-		return unions;
+	public List<EdgeDTO> getEdges() {
+		return edges;
 	}
-	public void setUnions(List<UnionDTO> unions) {
-		this.unions = unions;
+	public void setEdges(List<EdgeDTO> edges) {
+		this.edges = edges;
 	}
-	public List<FamilleDTO> getFamilles() {
-		return familles;
-	}
-	public void setFamilles(List<FamilleDTO> familles) {
-		this.familles = familles;
-	}
-    
-    
+        
 }

@@ -1,7 +1,10 @@
 package com.famtrees.services;
 
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -11,7 +14,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.famtrees.dto.ArbreDTO;
+import com.famtrees.dto.EdgeDTO;
 import com.famtrees.dto.FamilleDTO;
+import com.famtrees.dto.NodeDTO;
 import com.famtrees.dto.PersonneDTO;
 import com.famtrees.dto.UnionDTO;
 import com.famtrees.entities.Famille;
@@ -72,35 +77,54 @@ public class ArbreService {
         toutesPersonnes.addAll(descendants);
         toutesPersonnes.addAll(ascendants);
 
-        // --- DTOs ---
-        List<PersonneDTO> personnesDTO = toutesPersonnes.stream()
-                .map(PersonneMapper::toDTO)
-                .collect(Collectors.toList());
+        Set<NodeDTO> nodes = new HashSet<>();
+        Set<EdgeDTO> edges = new HashSet<>();
+        
+     // --- PERSONNES ---
+        for (Personne p : toutesPersonnes) {
 
-        Set<Union> toutesUnions = toutesPersonnes.stream()
-                .flatMap(p -> p.getUnions().stream())
-                .collect(Collectors.toSet());
+            Map<String, Object> data = new HashMap<>();
+            data.put("prenom", p.getPrenom());
+            data.put("nom", p.getNom());
+            data.put("sexe", p.getSexe());
+            data.put("dateNaissance", p.getDateNaissance());
 
-        List<UnionDTO> unionsDTO = toutesUnions.stream()
-                .map(UnionMapper::toDTO)
-                .collect(Collectors.toList());
+            nodes.add(new NodeDTO(
+                    p.getId(),
+                    p.getPrenom() + " " + p.getNom(),
+                    "PERSONNE",
+                    data
+            ));
 
-        Set<Famille> toutesFamilles = toutesPersonnes.stream()
-                .map(Personne::getFamille)
-                .filter(Objects::nonNull)
-                .collect(Collectors.toSet());
+            // Relations PARENT_DE
+            for (Personne enfant : p.getEnfants()) {
+                if (toutesPersonnes.contains(enfant)) {
+                    edges.add(new EdgeDTO(
+                            p.getId(),
+                            enfant.getId(),
+                            "PARENT_DE"
+                    ));
+                }
+            }
 
-        toutesFamilles.addAll(
-                toutesUnions.stream()
-                        .map(Union::getFamille)
-                        .filter(Objects::nonNull)
-                        .collect(Collectors.toSet())
-        );
+            // Relations UNION
+            for (Union u : p.getUnions()) {
+                nodes.add(new NodeDTO(
+                        u.getId(),
+                        "Union",
+                        "UNION",
+                        Map.of()
+                ));
 
-        List<FamilleDTO> famillesDTO = toutesFamilles.stream()
-                .map(FamilleMapper::toDTO)
-                .collect(Collectors.toList());
+                edges.add(new EdgeDTO(
+                        p.getId(),
+                        u.getId(),
+                        "CONJOINT_DANS"
+                ));
+            }
+        }
 
-        return new ArbreDTO(racineId, profondeur, personnesDTO, unionsDTO, famillesDTO);
+        return new ArbreDTO(racineId, profondeur, new ArrayList<>(nodes), new ArrayList<>(edges));
+
     }
 }
