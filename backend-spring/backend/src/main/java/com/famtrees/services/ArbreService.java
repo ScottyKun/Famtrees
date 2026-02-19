@@ -36,12 +36,13 @@ public class ArbreService {
             
             UNWIND personnes AS p
             
+            OPTIONAL MATCH (p)-[:PARENT_DE]->(parent:Personne)
             OPTIONAL MATCH (p)-[:CONJOINT_DANS]->(u:Union)
             OPTIONAL MATCH (u)-[:A_ENFANT]->(child:Personne)
             OPTIONAL MATCH (u)-[:FORME_FAMILLE]->(f:Famille)
             OPTIONAL MATCH (f)<-[:MEMBRE_DE]-(member:Personne)
 
-            RETURN DISTINCT p, u, child, f, member
+            RETURN DISTINCT p, u, child, f, member, parent
         """, profondeur);
 
         Set<NodeDTO> nodes = new HashSet<>();
@@ -58,7 +59,9 @@ public class ArbreService {
                     addPersonNode(record.get("member"), nodes);
                     addUnionNode(record.get("u"), nodes);
                     addFamilleNode(record.get("f"), nodes);
-
+                    addPersonNode(record.get("parent"), nodes);
+                    
+                    addEdge(record.get("p"), record.get("parent"), "PARENT_DE", edges);
                     addEdge(record.get("p"), record.get("u"), "CONJOINT_DANS", edges);
                     addEdge(record.get("u"), record.get("child"), "A_ENFANT", edges);
                     addEdge(record.get("u"), record.get("f"), "FORME_FAMILLE", edges);
