@@ -1,0 +1,298 @@
+/* Layout Styles */
+.layout-container {
+  display: flex;
+  height: 100vh;
+  background-color: #f9fafb;
+}
+
+/* Sidebar Desktop */
+.sidebar {
+  display: none;
+  width: 16rem;
+  background-color: white;
+  border-right: 1px solid #e5e7eb;
+  flex-direction: column;
+}
+
+@media (min-width: 768px) {
+  .sidebar {
+    display: flex;
+  }
+}
+
+.sidebar-header {
+  padding: 1.5rem;
+}
+
+.sidebar-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #1f2937;
+}
+
+.sidebar-subtitle {
+  font-size: 0.875rem;
+  color: #6b7280;
+  margin-top: 0.25rem;
+}
+
+.sidebar-nav {
+  padding: 0 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  flex: 1;
+}
+
+.nav-link {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  border-radius: 0.5rem;
+  color: #374151;
+  text-decoration: none;
+  transition: all 0.2s;
+}
+
+.nav-link:hover {
+  background-color: #f3f4f6;
+}
+
+.nav-link.active {
+  background-color: #eff6ff;
+  color: #1d4ed8;
+}
+
+.nav-link svg {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+/* Main Content Area */
+.main-content {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  overflow: hidden;
+}
+
+/* Mobile Header */
+.mobile-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem;
+  background-color: white;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+@media (min-width: 768px) {
+  .mobile-header {
+    display: none;
+  }
+}
+
+.mobile-header-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #1f2937;
+}
+
+.mobile-header-subtitle {
+  font-size: 0.75rem;
+  color: #6b7280;
+}
+
+/* Page Container */
+.page-container {
+  flex: 1;
+  overflow: auto;
+}
+
+/* Search Bar */
+.search-container {
+  position: relative;
+  margin-bottom: 1rem;
+}
+
+.search-icon {
+  position: absolute;
+  left: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 1rem;
+  height: 1rem;
+  color: #9ca3af;
+}
+
+.search-input {
+  padding-left: 2.5rem;
+}
+
+/* Stats Card */
+.stats-card {
+  background: white;
+  border-radius: 0.5rem;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+  transition: box-shadow 0.2s;
+  cursor: pointer;
+  text-decoration: none;
+  color: inherit;
+  display: block;
+}
+
+.stats-card:hover {
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+}
+
+.stats-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.5rem 0.5rem;
+}
+
+.stats-card-title {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #6b7280;
+}
+
+.stats-card-icon {
+  padding: 0.5rem;
+  border-radius: 0.5rem;
+}
+
+.stats-card-icon svg {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+.stats-card-content {
+  padding: 0 1.5rem 1.5rem;
+}
+
+.stats-card-value {
+  font-size: 1.875rem;
+  font-weight: 700;
+  color: #111827;
+}
+
+.stats-card-description {
+  font-size: 0.75rem;
+  color: #6b7280;
+  margin-top: 0.25rem;
+}
+
+/* Steps */
+.step {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+
+.step-number {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 9999px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  flex-shrink: 0;
+}
+
+.step-content h3 {
+  font-weight: 500;
+  color: #111827;
+  margin-bottom: 0.25rem;
+}
+
+.step-content p {
+  font-size: 0.875rem;
+  color: #6b7280;
+}
+
+/* Form */
+.form-group {
+  margin-bottom: 1rem;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+}
+
+@media (min-width: 768px) {
+  .form-row {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* Actions */
+.actions {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: flex-end;
+}
+
+/* Page Header */
+.page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.5rem;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 640px) {
+  .page-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
+
+.page-header-content h1 {
+  font-size: 1.875rem;
+  font-weight: 700;
+  color: #111827;
+}
+
+@media (max-width: 768px) {
+  .page-header-content h1 {
+    font-size: 1.5rem;
+  }
+}
+
+.page-header-content p {
+  font-size: 0.875rem;
+  color: #6b7280;
+  margin-top: 0.25rem;
+}
+
+/* Table Responsive */
+@media (max-width: 768px) {
+  .table th.hide-md,
+  .table td.hide-md {
+    display: none;
+  }
+}
+
+@media (max-width: 1024px) {
+  .table th.hide-lg,
+  .table td.hide-lg {
+    display: none;
+  }
+}
+
+@media (max-width: 640px) {
+  .table th.hide-sm,
+  .table td.hide-sm {
+    display: none;
+  }
+}
+ 
