@@ -3,13 +3,14 @@ package com.famtrees.services;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.springframework.data.neo4j.core.Neo4jClient;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.neo4j.driver.types.Node;
-
+import org.neo4j.driver.types.Relationship;
 
 import com.famtrees.dto.ArbreDTO;
 import com.famtrees.dto.EdgeDTO;
@@ -25,125 +26,129 @@ public class ArbreService {
         this.client = neo4jClient;
     }
 
-    public ArbreDTO buildArbreComplet(String racineElementId, int profondeur) {
-
-        String query = String.format("""
-            MATCH (root:Personne)
+    private static final String QUERY = """
+            MATCH (root)
             WHERE elementId(root) = $id
-            
-            OPTIONAL MATCH (root)-[:PARENT_DE*0..%d]-(relative:Personne)
-            WITH collect(DISTINCT root) + collect(DISTINCT relative) AS personnes
-            
-            UNWIND personnes AS p
-            
-            OPTIONAL MATCH (p)-[:PARENT_DE]->(parent:Personne)
-            OPTIONAL MATCH (p)-[:CONJOINT_DANS]->(u:Union)
-            OPTIONAL MATCH (u)-[:A_ENFANT]->(child:Personne)
-            OPTIONAL MATCH (u)-[:FORME_FAMILLE]->(f:Famille)
-            OPTIONAL MATCH (f)<-[:MEMBRE_DE]-(member:Personne)
-
-            RETURN DISTINCT p, u, child, f, member, parent
-        """, profondeur);
-
+     
+            // Étape 1 : collecter tous les nœuds connexes (sans limite de sauts)
+            OPTIONAL MATCH (root)-[:PARENT_DE|CONJOINT_DANS|A_ENFANT|MEMBRE_DE|FORME_FAMILLE*]-(node)
+            WITH root, collect(DISTINCT node) AS relatives
+            WITH relatives + [root] AS all_nodes
+            UNWIND all_nodes AS n
+     
+            // Étape 2 : pour chaque nœud, ramener ses relations directes
+            //           uniquement entre les nœuds de l'ensemble
+            OPTIONAL MATCH (n)-[r:PARENT_DE|CONJOINT_DANS|A_ENFANT|MEMBRE_DE|FORME_FAMILLE]-(target)
+            WHERE target IN all_nodes
+     
+            RETURN n AS node, r, target
+            """;
+    
+    public ArbreDTO buildArbreComplet(String racineElementId, int profondeur) {
+    	 
         Set<NodeDTO> nodes = new HashSet<>();
         Set<EdgeDTO> edges = new HashSet<>();
-
-        client.query(query)
+ 
+        client.query(QUERY)
                 .bind(racineElementId).to("id")
                 .fetch()
                 .all()
                 .forEach(record -> {
-
-                    addPersonNode(record.get("p"), nodes);
-                    addPersonNode(record.get("child"), nodes);
-                    addPersonNode(record.get("member"), nodes);
-                    addUnionNode(record.get("u"), nodes);
-                    addFamilleNode(record.get("f"), nodes);
-                    addPersonNode(record.get("parent"), nodes);
-                    
-                    addEdge(record.get("p"), record.get("parent"), "PARENT_DE", edges);
-                    addEdge(record.get("p"), record.get("u"), "CONJOINT_DANS", edges);
-                    addEdge(record.get("u"), record.get("child"), "A_ENFANT", edges);
-                    addEdge(record.get("u"), record.get("f"), "FORME_FAMILLE", edges);
-                    addEdge(record.get("member"), record.get("f"), "MEMBRE_DE", edges);
+ 
+                    // ── Nœud source ──────────────────────────────────────────
+                    Object nodeObj = record.get("node");
+                    if (nodeObj instanceof Node node) {
+                        dispatchNode(node, nodes);
+                    }
+ 
+                    // ── Nœud cible ───────────────────────────────────────────
+                    Object targetObj = record.get("target");
+                    if (targetObj instanceof Node target) {
+                        dispatchNode(target, nodes);
+                    }
+ 
+                    // ── Relation ─────────────────────────────────────────────
+                    // La relation r porte son propre type et ses nœuds start/end.
+                    // On n'a plus besoin de la reconstruire manuellement.
+                    Object relObj = record.get("r");
+                    if (relObj instanceof Relationship rel
+                            && nodeObj instanceof Node src
+                            && targetObj instanceof Node tgt) {
+ 
+                        edges.add(new EdgeDTO(
+                                src.elementId(),
+                                tgt.elementId(),
+                                rel.type()          // type réel stocké en BDD
+                        ));
+                    }
                 });
-
+ 
         return new ArbreDTO(
                 racineElementId,
-                profondeur,
+                profondeur,            // conservé pour info, n'influence plus la requête
                 new ArrayList<>(nodes),
                 new ArrayList<>(edges)
         );
     }
-
-    // =========================
-    // Méthodes utilitaires
-    // =========================
-
-    private void addPersonNode(Object nodeObj, Set<NodeDTO> nodes) {
-        if (nodeObj == null) return;
-
-        Node node = (Node) nodeObj;
-
+ 
+    // =========================================================================
+    //  Dispatch : crée le bon NodeDTO selon le label du nœud Neo4j
+    // =========================================================================
+ 
+    private void dispatchNode(Node node, Set<NodeDTO> nodes) {
+        List<String> labels = new ArrayList<>();
+        node.labels().forEach(labels::add);
+ 
+        if (labels.contains("Personne")) {
+            nodes.add(buildPersonneNode(node));
+        } else if (labels.contains("Union")) {
+            nodes.add(buildUnionNode(node));
+        } else if (labels.contains("Famille")) {
+            nodes.add(buildFamilleNode(node));
+        }
+        // Autres labels ignorés silencieusement
+    }
+ 
+    // ── Constructeurs de NodeDTO ─────────────────────────────────────────────
+ 
+    private NodeDTO buildPersonneNode(Node node) {
         Map<String, Object> data = new HashMap<>();
-        data.put("prenom", node.get("prenom").asString(null));
-        data.put("nom", node.get("nom").asString(null));
-        data.put("sexe", node.get("sexe").asString(null));
+        data.put("prenom",        node.get("prenom").asString(null));
+        data.put("nom",           node.get("nom").asString(null));
+        data.put("sexe",          node.get("sexe").asString(null));
         data.put("dateNaissance", node.get("dateNaissance").asObject());
-
-
-        nodes.add(new NodeDTO(
+ 
+        return new NodeDTO(
                 node.elementId(),
                 node.get("prenom").asString("") + " " + node.get("nom").asString(""),
                 "PERSONNE",
                 data
-        ));
+        );
     }
-
-
-    private void addUnionNode(Object nodeObj, Set<NodeDTO> nodes) {
-        if (nodeObj == null) return;
-
-        Node node = (Node) nodeObj;
-
+ 
+    private NodeDTO buildUnionNode(Node node) {
         Map<String, Object> data = new HashMap<>();
-        data.put("type", node.get("type").asString(null));
+        data.put("type",      node.get("type").asString(null));
+        data.put("libelle",   node.get("libelle").asString(null));
         data.put("dateDebut", node.get("dateDebut").asObject());
-
-        nodes.add(new NodeDTO(
+ 
+        return new NodeDTO(
                 node.elementId(),
                 "Union",
                 "UNION",
                 data
-        ));
+        );
     }
-
-
-    private void addFamilleNode(Object nodeObj, Set<NodeDTO> nodes) {
-        if (nodeObj == null) return;
-
-        Node node = (Node) nodeObj;
-
-        nodes.add(new NodeDTO(
+ 
+    private NodeDTO buildFamilleNode(Node node) {
+        Map<String, Object> data = new HashMap<>();
+        data.put("nom", node.get("nom").asString(null));
+ 
+        return new NodeDTO(
                 node.elementId(),
                 "Famille",
                 "FAMILLE",
-                Map.of()
-        ));
+                data
+        );
     }
-
-
-    private void addEdge(Object fromObj, Object toObj, String type, Set<EdgeDTO> edges) {
-        if (fromObj == null || toObj == null) return;
-
-        Node from = (Node) fromObj;
-        Node to = (Node) toObj;
-
-        edges.add(new EdgeDTO(
-                from.elementId(),
-                to.elementId(),
-                type
-        ));
-    }
-
 }
