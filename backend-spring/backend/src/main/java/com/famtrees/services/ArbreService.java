@@ -26,30 +26,48 @@ public class ArbreService {
         this.client = neo4jClient;
     }
 
-    private static final String QUERY = """
-            MATCH (root)
-            WHERE elementId(root) = $id
-     
-            // Étape 1 : collecter tous les nœuds connexes (sans limite de sauts)
-            OPTIONAL MATCH (root)-[:PARENT_DE|CONJOINT_DANS|A_ENFANT|MEMBRE_DE|FORME_FAMILLE*]-(node)
-            WITH root, collect(DISTINCT node) AS relatives
-            WITH relatives + [root] AS all_nodes
-            UNWIND all_nodes AS n
-     
-            // Étape 2 : pour chaque nœud, ramener ses relations directes
-            //           uniquement entre les nœuds de l'ensemble
-            OPTIONAL MATCH (n)-[r:PARENT_DE|CONJOINT_DANS|A_ENFANT|MEMBRE_DE|FORME_FAMILLE]-(target)
-            WHERE target IN all_nodes
-     
-            RETURN n AS node, r, target
-            """;
-    
+    /**
+     * Le motif de traversée Neo4j : Personne <-[CONJOINT_DANS]- Union -[A_ENFANT]->
+     * Personne (+ MEMBRE_DE/FORME_FAMILLE pour les familles). Le nombre de sauts
+     * (maxHops) est calculé côté Flask (voir tree-flask/lineage.py:required_hops) à
+     * partir des 3 axes demandés (up/down/collateral) et transmis ici via le
+     * paramètre "profondeur" du controller.
+     *
+     * Neo4j ne permet pas de paramétrer la borne d'une relation à longueur variable
+     * (ex. *0..$n n'est pas supporté) : on doit l'injecter directement dans le texte
+     * de la requête. Sans risque d'injection puisque c'est un int déjà validé par
+     * Spring (@RequestParam int) — jamais une chaîne fournie par l'appelant.
+     */
+    private static String buildQuery(int maxHops) {
+        return """
+                MATCH (root)
+                WHERE elementId(root) = $id
+
+                // Étape 1 : collecter les nœuds connexes, jusqu'à maxHops sauts
+                OPTIONAL MATCH (root)-[:PARENT_DE|CONJOINT_DANS|A_ENFANT|MEMBRE_DE|FORME_FAMILLE*0..%d]-(node)
+                WITH root, collect(DISTINCT node) AS relatives
+                WITH relatives + [root] AS all_nodes
+                UNWIND all_nodes AS n
+
+                // Étape 2 : pour chaque nœud, ramener ses relations directes
+                //           uniquement entre les nœuds de l'ensemble
+                OPTIONAL MATCH (n)-[r:PARENT_DE|CONJOINT_DANS|A_ENFANT|MEMBRE_DE|FORME_FAMILLE]-(target)
+                WHERE target IN all_nodes
+
+                RETURN n AS node, r, target
+                """.formatted(maxHops);
+    }
+
     public ArbreDTO buildArbreComplet(String racineElementId, int profondeur) {
-    	 
+
+        // Borne de sécurité : quel que soit ce qu'on nous demande, on ne part
+        // jamais sans limite sur une famille élargie potentiellement très grande.
+        int maxHops = Math.max(profondeur, 0);
+
         Set<NodeDTO> nodes = new HashSet<>();
         Set<EdgeDTO> edges = new HashSet<>();
  
-        client.query(QUERY)
+        client.query(buildQuery(maxHops))
                 .bind(racineElementId).to("id")
                 .fetch()
                 .all()
@@ -85,7 +103,7 @@ public class ArbreService {
  
         return new ArbreDTO(
                 racineElementId,
-                profondeur,            // conservé pour info, n'influence plus la requête
+                profondeur,            // conservé pour info dans la réponse (nb de sauts utilisé)
                 new ArrayList<>(nodes),
                 new ArrayList<>(edges)
         );

@@ -80,7 +80,7 @@ function UnionDetailModal({ union, onClose }: { union: Union; onClose: () => voi
   const famille   = familles?.find(f => f.id === union.familleId);
 
   return (
-    <Modal open onClose={onClose} title={union.libelle} subtitle={`Union — ${TYPE_OPTIONS.find(t => t.value === union.type)?.label}`}>
+    <Modal open onClose={onClose} title={union.libelle || "Union sans libellé"} subtitle={`Union — ${TYPE_OPTIONS.find(t => t.value === union.type)?.label}`}>
       {/* Tabs */}
       <div className="flex border-b border-gray-100 mb-4">
         {["Conjoints", "Enfants", "Famille"].map(t => (
@@ -238,7 +238,7 @@ export default function UnionsPage() {
   };
 
   const filtered = (unions ?? []).filter(u =>
-    u.libelle.toLowerCase().includes(search.toLowerCase())
+    (u.libelle ?? "").toLowerCase().includes(search.toLowerCase())
   );
 
   const openCreate = () => { setEditing(null); setModalOpen(true); };
@@ -288,7 +288,7 @@ export default function UnionsPage() {
             <tbody>
               {filtered.map(u => (
                 <tr key={u.id} className="border-b border-gray-50 last:border-0 hover:bg-gray-50 transition-colors">
-                  <td className="px-4 py-3 font-medium text-gray-900">{u.libelle}</td>
+                  <td className="px-4 py-3 font-medium text-gray-900">{u.libelle || <span className="text-gray-400 italic">Sans libellé</span>}</td>
                   <td className="px-4 py-3">
                     <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-pink-50 text-pink-700">
                       {TYPE_OPTIONS.find(t => t.value === u.type)?.label ?? u.type}

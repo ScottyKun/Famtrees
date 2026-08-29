@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { arbreService } from "../services/arbreService";
-import type { ArbrePayload } from "../types";
+import type { ArbrePayload, TreeAxes } from "../types";
 
 export const ARBRES_KEY = ["arbres"] as const;
 
@@ -20,10 +20,10 @@ export function useArbre(id: string) {
 }
 
 // Génération Neo4j depuis la racine_id stockée en PostgreSQL
-export function useGenerateArbre(id: string, depth?: number) {
+export function useGenerateArbre(id: string, axes?: TreeAxes) {
   return useQuery({
-    queryKey: [...ARBRES_KEY, id, "generate", depth],
-    queryFn:  () => arbreService.generate(id, depth),
+    queryKey: [...ARBRES_KEY, id, "generate", axes?.up, axes?.down, axes?.collateral],
+    queryFn:  () => arbreService.generate(id, axes),
     enabled:  !!id,
     // L'arbre Neo4j ne change pas souvent — on garde en cache 10 minutes
     staleTime: 10 * 60 * 1000,

@@ -1,5 +1,5 @@
 import flaskApi from "./flaskApi";
-import type { Arbre, ArbrePayload, ArbreGenerateResponse } from "../types";
+import type { Arbre, ArbrePayload, ArbreGenerateResponse, TreeAxes } from "../types";
 
 export const arbreService = {
 
@@ -21,17 +21,15 @@ export const arbreService = {
     flaskApi.delete(`/arbres/${id}`),
 
   // ── Génération Neo4j ──────────────────────────────────────────────────────
+  // axes = { up, down, collateral } — voir tree-flask/lineage.py.
+  // Un axe omis retombe sur la valeur enregistrée sur l'arbre (ou 1 par défaut).
 
-  generate: (id: string, depth?: number) => {
-    const params = depth !== undefined ? { depth } : {};
-    return flaskApi
-      .get<ArbreGenerateResponse>(`/arbres/${id}/generate`, { params })
-      .then(r => r.data);
-  },
+  generate: (id: string, axes?: TreeAxes) =>
+    flaskApi
+      .get<ArbreGenerateResponse>(`/arbres/${id}/generate`, { params: axes ?? {} })
+      .then(r => r.data),
 
   // Visualisation directe depuis un elementId Neo4j sans sauvegarde
-  getTree: (rootId: string, depth?: number) => {
-    const params = depth !== undefined ? { depth } : {};
-    return flaskApi.get(`/tree/${rootId}`, { params }).then(r => r.data);
-  },
+  getTree: (rootId: string, axes?: TreeAxes) =>
+    flaskApi.get(`/tree/${rootId}`, { params: axes ?? {} }).then(r => r.data),
 };

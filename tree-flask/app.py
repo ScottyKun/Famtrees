@@ -13,7 +13,7 @@ def create_app():
 
     # ── Config PostgreSQL 
     app.config["SQLALCHEMY_DATABASE_URI"] = (
-        "postgresql://admin:admin@localhost:5433/famtreeBD"
+        "postgresql://admin:admin@localhost:5432/UTexchangedb"
     )
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
  

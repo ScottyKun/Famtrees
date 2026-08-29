@@ -132,7 +132,7 @@ function PersonneDetailModal({ personne, onClose }: { personne: Personne; onClos
   // Unions
   const unionItems = (personne.unionsIds ?? []).map(id => {
     const u = unions?.find(x => x.id === id);
-    return { id, label: u?.libelle ?? id, sublabel: u?.type };
+    return { id, label: u?.libelle || "Union sans libellé", sublabel: u?.type };
   });
 
   // Familles
@@ -204,7 +204,7 @@ function PersonneDetailModal({ personne, onClose }: { personne: Personne; onClos
                 className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg bg-gray-50 outline-none">
                 <option value="">— Sélectionner une union —</option>
                 {(unions ?? []).filter(u => !personne.unionsIds?.includes(u.id)).map(u => (
-                  <option key={u.id} value={u.id}>{u.libelle}</option>
+                  <option key={u.id} value={u.id}>{u.libelle || "Union sans libellé"}</option>
                 ))}
               </select>
               <div className="flex gap-2">

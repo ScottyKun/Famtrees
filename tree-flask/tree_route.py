@@ -1,26 +1,30 @@
 from flask import Blueprint, jsonify, request
 import requests
 from tree_generator import build_tree
+from lineage import is_visible, required_hops
 
 tree_bp = Blueprint("tree", __name__)
 
 SPRING_BASE_URL = "http://localhost:8070/api/arbres"
 
+# Cap de sécurité quand aucun filtre n'est demandé (vue "arbre complet").
+# Volontairement large plutôt qu'illimité : évite un scan sans borne sur une
+# très grande famille élargie tout en couvrant tout cas réaliste (~20 générations).
+FULL_TREE_HOPS_CAP = 40
 
-def filter_by_depth(tree, root_id, depth):
+
+def filter_by_axes(tree, root_id, up=1, down=1, collateral=1):
     """
-    Filtre l'arbre autour de la racine selon la profondeur demandée.
+    Filtre l'arbre autour de la racine selon 3 axes indépendants
+    (voir lineage.py pour la classification et les définitions) :
 
-    Logique :
-      - La génération de la racine est le point d'ancrage (gen_root).
-      - On inclut toujours 1 niveau au-dessus (gen_root - 1) pour voir
-        les parents directs de la racine.
-      - On descend jusqu'à gen_root + depth.
+      up         : nb de générations d'ascendance directe (parents, grands-parents...)
+      down       : nb de générations de descendance directe (enfants, petits-enfants...)
+      collateral : nb de "sauts de côté" à partir de chaque ancêtre direct
+                   (1 = fratrie/oncles-tantes, 2 = cousins/neveux-nièces, ...)
 
-      depth=0 → racine + ses parents directs
-      depth=1 → + ses enfants
-      depth=2 → + ses petits-enfants
-      ...
+    Un conjoint (SPOUSE) hérite des coordonnées de son partenaire, donc il
+    apparaît/disparaît toujours avec lui, sans coût de profondeur supplémentaire.
 
     Unions et Familles sont filtrées en cohérence :
       - Union gardée si au moins un conjoint est dans les personnes gardées.
@@ -32,20 +36,15 @@ def filter_by_depth(tree, root_id, depth):
     unions   = tree["unions"]
     families = tree["families"]
 
-    root_gen    = persons[root_id]["generation"]
-    min_allowed = root_gen - 1          # 1 niveau d'ascendance toujours visible
-    max_allowed = root_gen + depth      # N niveaux de descendance
-
     # ── 1. Personnes dans le périmètre ───────────────────────────
     allowed_persons = {
         pid for pid, p in persons.items()
-        if p["generation"] is not None
-        and min_allowed <= p["generation"] <= max_allowed
+        if "axis" in p and is_visible(p, up=up, down=down, collateral=collateral)
     }
 
     allowed_gens = {
-        g for g in tree["generations"]
-        if min_allowed <= int(g) <= max_allowed
+        g for g, ids in tree["generations"].items()
+        if any(pid in allowed_persons for pid in ids)
     }
 
     # ── 2. Unions : garder si au moins un conjoint est visible ───
@@ -100,11 +99,36 @@ def filter_by_depth(tree, root_id, depth):
 @tree_bp.route("/tree/<path:root_id>")
 def get_tree(root_id):
 
+    # Nouveaux paramètres V2 (voir filter_by_axes / lineage.py)
+    up         = request.args.get("up",         default=None, type=int)
+    down       = request.args.get("down",       default=None, type=int)
+    collateral = request.args.get("collateral", default=None, type=int)
+
+    # Alias legacy : ?depth=N seul équivaut à up=1, down=N, collateral=1
+    # (se rapproche du comportement V1 mais inclut désormais la fratrie par défaut)
     depth = request.args.get("depth", default=None, type=int)
+    if depth is not None:
+        up         = up         if up         is not None else 1
+        down       = down       if down       is not None else depth
+        collateral = collateral if collateral is not None else 1
+
+    any_filter_requested = any(v is not None for v in (up, down, collateral))
+
+    # Sauts Neo4j nécessaires côté Spring pour couvrir ce qui sera affiché
+    # (voir lineage.required_hops). Sans filtre demandé : cap large plutôt
+    # que la requête sans borne d'avant.
+    if any_filter_requested:
+        hops = required_hops(
+            up=up if up is not None else 1,
+            down=down if down is not None else 1,
+            collateral=collateral if collateral is not None else 1,
+        )
+    else:
+        hops = FULL_TREE_HOPS_CAP
 
     try:
         spring_url = f"{SPRING_BASE_URL}/{root_id}"
-        response = requests.get(spring_url)
+        response = requests.get(spring_url, params={"depth": hops})
 
         if response.status_code != 200:
             return jsonify({
@@ -116,9 +140,14 @@ def get_tree(root_id):
 
         tree = build_tree(data, root_id)
 
-        # Appliquer le filtre de profondeur si demandé
-        if depth is not None and root_id in tree["persons"]:
-            tree = filter_by_depth(tree, root_id, depth)
+        # Appliquer le filtre si au moins un des 3 paramètres est demandé
+        if any_filter_requested and root_id in tree["persons"]:
+            tree = filter_by_axes(
+                tree, root_id,
+                up=up if up is not None else 1,
+                down=down if down is not None else 1,
+                collateral=collateral if collateral is not None else 1,
+            )
 
         return jsonify(tree)
 

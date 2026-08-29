@@ -15,7 +15,8 @@ Les clés et valeurs de ids sont les elementId COMPLETS Neo4j
 (ex. "4:d71b891d-30e7-44f2-a352-573617564688:0"), exactement comme
 Spring Boot les fournit. Aucune transformation n'est appliquée.
 """
-from graph_builder import index_graph, compute_generations
+from graph_builder import index_graph
+from lineage import enrich_with_lineage
 
 
 def _normalize_sexe(raw):
@@ -43,22 +44,11 @@ def build_tree(data, root_id):
     # ── 1. Indexer et nettoyer le graphe ────────────────────────
     nodes_map, outgoing, incoming = index_graph(data)
 
-    # ── 2. Calculer les générations ──────────────────────────────
-    raw_gen = compute_generations(root_id, outgoing, incoming)
-
-    # Décalage : la racine → génération -1, ses enfants → 0, etc.
-    root_raw = raw_gen.get(root_id, 0)
-    offset   = root_raw + 1
-
-    def adj(nid):
-        g = raw_gen.get(nid)
-        return (g - offset) if g is not None else None
-
-    # ── 3. Collecter les structures depuis les arêtes nettoyées ─
-    union_conjoints = {}   # union_id → set(person_id)
-    union_children  = {}   # union_id → set(person_id)
-    famille_members = {}   # famille_id → set(id)
-    famille_to_union = {}  # famille_id → union_id  (via FORME_FAMILLE)
+    # ── 2. Collecter les structures depuis les arêtes nettoyées ─
+    union_conjoints  = {}   # union_id → set(person_id)
+    union_children   = {}   # union_id → set(person_id)
+    famille_members  = {}   # famille_id → set(id)
+    union_to_famille = {}   # union_id → famille_id  (via FORME_FAMILLE, sens UNION→FAMILLE)
 
     for nid, edges in outgoing.items():
         for e in edges:
@@ -70,11 +60,12 @@ def build_tree(data, root_id):
             elif t == "MEMBRE_DE":
                 famille_members.setdefault(to, set()).add(nid)
             elif t == "FORME_FAMILLE":
-                famille_to_union[nid] = to   # FAMILLE → UNION
+                union_to_famille[nid] = to   # nid = union, to = famille
 
-    union_to_famille = {v: k for k, v in famille_to_union.items()}
-
-    # ── 4. Initialiser les Personnes ─────────────────────────────
+    # ── 3. Initialiser les Personnes ─────────────────────────────
+    # "generation" est calculé plus bas (étape 6bis, via lineage.compute_level) —
+    # None ici tant que la classification n'est pas passée (personnes hors
+    # périmètre de la racine, cas normalement inexistant mais gardé par sécurité).
     persons = {}
     for nid, node in nodes_map.items():
         if node["type"] != "PERSONNE":
@@ -84,14 +75,14 @@ def build_tree(data, root_id):
             "nom":                   node["data"].get("nom"),
             "prenom":                node["data"].get("prenom"),
             "sexe":                  _normalize_sexe(node["data"].get("sexe")),
-            "generation":            adj(nid),
+            "generation":            None,
             "unions":                [],
             "children_out_of_union": [],
             "families_origin":       [],
             "families_formed":       [],
         }
 
-    # ── 5. Construire Unions et Familles ─────────────────────────
+    # ── 4. Construire Unions et Familles ─────────────────────────
     unions = {}
     for uid in set(union_conjoints) | set(union_children):
         unions[uid] = {
@@ -105,7 +96,7 @@ def build_tree(data, root_id):
         for fid, members in famille_members.items()
     }
 
-    # ── 6. Enrichir les Personnes ────────────────────────────────
+    # ── 5. Enrichir les Personnes ────────────────────────────────
     for uid, u in unions.items():
         fam_id = union_to_famille.get(uid)
 
@@ -125,7 +116,11 @@ def build_tree(data, root_id):
             if fam_id and fam_id not in p["families_origin"]:
                 p["families_origin"].append(fam_id)
 
-    # ── 7. Grouper par génération ────────────────────────────────
+    # ── 6. Classifier chaque personne (lignée directe / collatérale) et
+    #      calculer "generation" comme niveau vertical d'affichage ──────
+    enrich_with_lineage(persons, unions, root_id)
+
+    # ── 7. Grouper par génération (niveau vertical) ────────────────
     generations_grouped = {}
     for p_id, p in persons.items():
         g = p["generation"]
