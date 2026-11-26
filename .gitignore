@@ -21,9 +21,8 @@
 # ===================================
 # Flask / Python
 # ===================================
-/tree-flask/__pycache__/
 /tree-flask/env/
-/tree-flask/*.pyc
+/tree-flask/venv/
 /tree-flask/.pytest_cache/
 /tree-flask/.venv/
 
@@ -49,3 +48,12 @@ Desktop.ini
 .env
 *.log
 
+# Caches Python (dans tous les sous-dossiers)
+__pycache__/
+*.pyc
+
+# Secrets de prod générés par deploy/gen-env.sh 
+/deploy/env/
+
+/docker/
+/neo4j/

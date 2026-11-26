@@ -3,6 +3,7 @@ import requests
 from CRUD.extensions import db
 from CRUD.models.arbre import Arbre
 from tree_route import SPRING_BASE_URL, filter_by_axes
+from auth import spring_headers
 from tree_generator import build_tree
 from lineage import required_hops
 
@@ -89,8 +90,10 @@ def generate(arbre_id):
  
     try:
         spring_url = f"{SPRING_BASE_URL}/{arbre.racine_id}"
-        response   = requests.get(spring_url, params={"depth": hops}, timeout=15)
+        response   = requests.get(spring_url, params={"depth": hops}, headers=spring_headers(), timeout=15)
  
+        if response.status_code in (401, 403):
+            return jsonify({"error": "Non authentifié auprès de Spring"}), response.status_code
         if response.status_code != 200:
             return jsonify({
                 "error":   "Erreur Spring API",

@@ -1,0 +1,13 @@
+# Seuls pom.xml et src/ sont copiés dans l'image ; on allège quand même le contexte
+target/
+.env
+.env.*
+.mvn/
+mvnw
+mvnw.cmd
+.settings/
+.classpath
+.project
+.factorypath
+HELP.md
+*.log

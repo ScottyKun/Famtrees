@@ -1,41 +1,47 @@
 import { useMemo } from "react";
-import ReactFlow, {
-  Background, Controls, Handle, Position,
-  type Node, type Edge, type NodeProps,
-} from "reactflow";
+import ReactFlow, { Background, Controls, type Node, type NodeProps } from "reactflow";
 import "reactflow/dist/style.css";
 import type { ArbreDTO, ArbrePersonne } from "../../types";
-import { computeTreeLayout, CARD_W, CARD_H, AVATAR, COUPLE_GAP } from "./TreeLayout";
+import { computeTreeLayout, CARD_W, CARD_H, AVATAR, type TreeLayoutResult } from "./TreeLayout";
 
 // Un conjoint "rapporté" (marié dans la famille, hors lignée de sang de la
-// racine) est reconnaissable à son anneau pointillé gris — voir lineage.py :
-// axis === "SPOUSE" signifie que la personne n'est là que par alliance.
+// racine) a un anneau pointillé gris — voir lineage.py : axis === "SPOUSE".
+const SPOUSE_RING = "#9ca3af";
+const LINE = "#b6bdc8";
+
 function isBloodline(p: ArbrePersonne): boolean {
   return p.axis !== "SPOUSE";
 }
 
 function ringColor(p: ArbrePersonne): string {
-  if (!isBloodline(p)) return "var(--border-stronger)";
-  return p.sexe === "M" ? "#378ADD" : p.sexe === "F" ? "#D4537E" : "var(--border-stronger)";
+  if (!isBloodline(p)) return SPOUSE_RING;
+  return p.sexe === "M" ? "#378ADD" : p.sexe === "F" ? "#D4537E" : SPOUSE_RING;
 }
 
-// ── Une personne (avatar + libellé, sans encadré) ────────────────────────────
-function PersonCell({ person, isRoot }: { person: ArbrePersonne; isRoot: boolean }) {
+// ── Une personne : avatar + prénom + nom ─────────────────────────────────────
+function PersonNode({ data }: NodeProps<{ person: ArbrePersonne; isRoot: boolean }>) {
+  const { person, isRoot } = data;
   const bloodline = isBloodline(person);
   const initials = `${person.prenom?.[0] ?? ""}${person.nom?.[0] ?? ""}`.toUpperCase();
+  const year = person.dateNaissance?.slice(0, 4);
 
   return (
-    <div className="relative flex flex-col items-center" style={{ width: CARD_W }}>
+    <div
+      className="relative flex flex-col items-center"
+      style={{ width: CARD_W, height: CARD_H }}
+      title={`${person.prenom} ${person.nom}${year ? ` · ${year}` : ""}`}
+    >
       {isRoot && (
-        <span className="absolute -top-2.5 text-[9px] bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full whitespace-nowrap">
+        <span className="absolute -top-4 text-[9px] bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full whitespace-nowrap">
           Racine
         </span>
       )}
       <div
-        className="rounded-full bg-white flex items-center justify-center text-xs font-semibold text-gray-800"
+        className={`rounded-full flex items-center justify-center text-xs font-semibold text-gray-800 ${isRoot ? "bg-blue-50" : "bg-white"}`}
         style={{
           width: AVATAR, height: AVATAR,
-          border: bloodline ? `2px solid ${ringColor(person)}` : `2px dashed ${ringColor(person)}`,
+          border: `2px ${bloodline ? "solid" : "dashed"} ${ringColor(person)}`,
+          boxShadow: isRoot ? "0 0 0 4px #dbeafe" : undefined,
         }}
       >
         {initials}
@@ -46,50 +52,52 @@ function PersonCell({ person, isRoot }: { person: ArbrePersonne; isRoot: boolean
   );
 }
 
-// ── Bloc : une personne seule, ou un couple (2 avatars + petit connecteur) ──
-function BlockNode({ data }: NodeProps<{ persons: ArbrePersonne[]; rootId: string }>) {
-  const { persons, rootId } = data;
-  const isCouple = persons.length === 2;
-
+// ── Calque des traits (couples, points d'union, peignes parents → enfants) ──
+// Un seul SVG pour tout l'arbre : les traits viennent tels quels de TreeLayout,
+// React Flow ne fait que le zoom / déplacement.
+function LinksNode({ data }: NodeProps<{ layout: TreeLayoutResult }>) {
+  const { layout } = data;
   return (
-    <div className="relative flex items-start" style={{ gap: isCouple ? COUPLE_GAP : 0, height: CARD_H }}>
-      <Handle type="target" position={Position.Top} className="!bg-gray-300 !w-1.5 !h-1.5 !border-0 !top-5" />
-      {isCouple && (
-        <div className="absolute left-1/2 -translate-x-1/2 w-2 h-2 rounded-full bg-white border border-gray-300" style={{ top: AVATAR / 2 - 4 }} />
-      )}
-      {persons.map(p => (
-        <PersonCell key={p.id} person={p} isRoot={p.id === rootId} />
+    <svg
+      width={layout.width}
+      height={layout.height}
+      style={{ overflow: "visible", pointerEvents: "none", display: "block" }}
+      aria-hidden="true"
+    >
+      {layout.segments.map((s, i) => (
+        <line key={i} x1={s.x1} y1={s.y1} x2={s.x2} y2={s.y2} stroke={LINE} strokeWidth={1.5} strokeLinecap="round" />
       ))}
-      <Handle type="source" position={Position.Bottom} className="!bg-gray-300 !w-1.5 !h-1.5 !border-0" />
-    </div>
+      {layout.unionDots.map(d => (
+        <circle key={d.id} cx={d.x} cy={d.y} r={4} fill="#fff" stroke={LINE} strokeWidth={1.5} />
+      ))}
+    </svg>
   );
 }
 
-const nodeTypes = { block: BlockNode };
+const nodeTypes = { person: PersonNode, links: LinksNode };
 
 export default function FamilyTreeFlow({ tree, rootId }: { tree: ArbreDTO; rootId: string }) {
-  const { nodes, edges } = useMemo(() => {
+  const nodes = useMemo<Node[]>(() => {
     const layout = computeTreeLayout(tree, rootId);
-
-    const rfNodes: Node[] = layout.nodes.map(n => ({
-      id: n.id,
-      type: "block",
-      position: { x: n.x - n.width / 2, y: n.y - CARD_H / 2 },
-      data: { persons: n.ids.map(id => tree.persons[id]).filter(Boolean), rootId },
+    const links: Node = {
+      id: "__links__",
+      type: "links",
+      position: { x: 0, y: 0 },
+      data: { layout },
       draggable: false,
-      style: { width: n.width },
+      selectable: false,
+      zIndex: 0,
+      style: { pointerEvents: "none" },
+    };
+    const people: Node[] = layout.persons.map(p => ({
+      id: p.id,
+      type: "person",
+      position: { x: p.x - CARD_W / 2, y: p.y },
+      data: { person: tree.persons[p.id], isRoot: p.id === rootId },
+      draggable: false,
+      zIndex: 1,
     }));
-
-    const rfEdges: Edge[] = layout.edges.map(e => ({
-      id: e.id,
-      source: e.source,
-      target: e.target,
-      type: "smoothstep",
-      pathOptions: { borderRadius: 10 },
-      style: { stroke: "#d1d5db", strokeWidth: 1.25 },
-    }));
-
-    return { nodes: rfNodes, edges: rfEdges };
+    return [links, ...people];
   }, [tree, rootId]);
 
   return (
@@ -97,10 +105,10 @@ export default function FamilyTreeFlow({ tree, rootId }: { tree: ArbreDTO; rootI
       <div className="flex-1 min-h-0">
         <ReactFlow
           nodes={nodes}
-          edges={edges}
+          edges={[]}
           nodeTypes={nodeTypes}
           fitView
-          fitViewOptions={{ padding: 0.2 }}
+          fitViewOptions={{ padding: 0.15 }}
           minZoom={0.2}
           maxZoom={1.5}
           proOptions={{ hideAttribution: true }}
@@ -111,9 +119,10 @@ export default function FamilyTreeFlow({ tree, rootId }: { tree: ArbreDTO; rootI
           <Controls showInteractive={false} />
         </ReactFlow>
       </div>
-      <div className="flex items-center gap-4 px-1 pt-2 text-[11px] text-gray-400 shrink-0">
+      <div className="flex items-center gap-4 px-1 pt-2 text-[11px] text-gray-500 shrink-0">
         <div className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full border-2 border-blue-400" /> Lien de sang</div>
         <div className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full border-2 border-dashed border-gray-400" /> Conjoint rapporté</div>
+        <div className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full border border-gray-400 bg-white" /> Union</div>
       </div>
     </div>
   );

@@ -1,0 +1,16 @@
+# Environnements et secrets locaux : jamais dans l'image
+venv/
+.venv/
+env/
+.env
+.env.*
+!.env.example
+# Caches / outils
+__pycache__/
+**/__pycache__/
+*.pyc
+.pytest_cache/
+.vscode/
+*.log
+# Tests manuels
+test_*.py

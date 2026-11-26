@@ -8,7 +8,10 @@ import {
   GitBranch,
   Menu,
   X,
+  LogOut,
+  UserCog,
 } from "lucide-react";
+import { useAuth } from "../../auth/AuthContext";
 
 // ── Navigation items 
 const NAV_ITEMS = [
@@ -17,6 +20,7 @@ const NAV_ITEMS = [
   { to: "/familles",  label: "Familles",  icon: Home            },
   { to: "/unions",    label: "Unions",    icon: Heart           },
   { to: "/arbres",    label: "Arbres",    icon: GitBranch       },
+  { to: "/utilisateurs", label: "Utilisateurs", icon: UserCog   },
 ];
 
 // ── Sidebar content (partagé desktop + mobile) 
@@ -52,6 +56,35 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
           </NavLink>
         ))}
       </nav>
+
+      <UserFooter />
+    </div>
+  );
+}
+
+// ── Utilisateur connecté + déconnexion (bas de la sidebar) 
+function UserFooter() {
+  const { user, logout } = useAuth();
+  if (!user) return null;
+  const initials = `${user.prenom?.[0] ?? ""}${user.nom?.[0] ?? ""}`.toUpperCase() || "?";
+  return (
+    <div className="border-t border-gray-100 px-3 py-3 flex items-center gap-3">
+      <div className="w-9 h-9 rounded-full bg-blue-50 text-blue-700 flex items-center justify-center text-xs font-semibold shrink-0">
+        {initials}
+      </div>
+      <div className="min-w-0 flex-1">
+        <p className="text-sm font-medium text-gray-900 truncate">{user.prenom} {user.nom}</p>
+        <p className="text-xs text-gray-500 truncate">{user.email}</p>
+      </div>
+      <button
+        type="button"
+        onClick={() => void logout()}
+        className="p-2 rounded-lg text-gray-500 hover:text-gray-900 hover:bg-gray-100"
+        aria-label="Se déconnecter"
+        title="Se déconnecter"
+      >
+        <LogOut size={18} />
+      </button>
     </div>
   );
 }

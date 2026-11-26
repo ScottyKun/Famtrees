@@ -1,4 +1,4 @@
-import { forwardRef } from "react";
+import { forwardRef, useId } from "react";
 
 // ── Input ─────────────────────────────────────────────────────────────────────
 interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
@@ -8,15 +8,20 @@ interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
 }
 
 export const Input = forwardRef<HTMLInputElement, InputProps>(
-  ({ label, error, required, className = "", ...props }, ref) => (
+  ({ label, error, required, className = "", id, ...props }, ref) => {
+    const autoId = useId();
+    const inputId = id ?? autoId;
+    return (
     <div className="flex flex-col gap-1">
       {label && (
-        <label className="text-sm font-medium text-gray-700">
+        <label htmlFor={inputId} className="text-sm font-medium text-gray-700">
           {label}{required && <span className="text-red-500 ml-0.5">*</span>}
         </label>
       )}
       <input
         ref={ref}
+        id={inputId}
+        aria-invalid={error ? true : undefined}
         className={`w-full px-3 py-2 text-sm border rounded-lg outline-none transition-colors
           ${error
             ? "border-red-400 focus:border-red-500 bg-red-50"
@@ -26,7 +31,8 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
       />
       {error && <p className="text-xs text-red-500">{error}</p>}
     </div>
-  )
+    );
+  }
 );
 Input.displayName = "Input";
 
@@ -39,15 +45,19 @@ interface SelectProps extends React.SelectHTMLAttributes<HTMLSelectElement> {
 }
 
 export const Select = forwardRef<HTMLSelectElement, SelectProps>(
-  ({ label, error, required, options, className = "", ...props }, ref) => (
+  ({ label, error, required, options, className = "", id, ...props }, ref) => {
+    const autoId = useId();
+    const selectId = id ?? autoId;
+    return (
     <div className="flex flex-col gap-1">
       {label && (
-        <label className="text-sm font-medium text-gray-700">
+        <label htmlFor={selectId} className="text-sm font-medium text-gray-700">
           {label}{required && <span className="text-red-500 ml-0.5">*</span>}
         </label>
       )}
       <select
         ref={ref}
+        id={selectId}
         className={`w-full px-3 py-2 text-sm border rounded-lg outline-none transition-colors bg-gray-50 focus:bg-white
           ${error ? "border-red-400 focus:border-red-500" : "border-gray-200 focus:border-blue-400"}
           ${className}`}
@@ -59,7 +69,8 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
       </select>
       {error && <p className="text-xs text-red-500">{error}</p>}
     </div>
-  )
+    );
+  }
 );
 Select.displayName = "Select";
 
