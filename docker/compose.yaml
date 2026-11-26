@@ -1,0 +1,45 @@
+
+services:
+  # Service PostgreSQL pour Flask
+  postgres:
+    image: postgres:16
+    container_name: pgsql_flaskDB
+    restart: always
+    environment:
+      POSTGRES_DB: famtreeBD
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin
+    ports:
+      - "5433:5432"  # Port 5433 sur l'hôte -> 5432 dans le conteneur
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - famtree
+
+  # Service pgAdmin
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: pgadmin
+    restart: always
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@pgadmin.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+    ports:
+      - "5050:80"  
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    networks:
+      - famtree
+    depends_on:
+      - postgres  
+
+# Volumes pour persister les données
+volumes:
+  postgres_data:
+  pgadmin_data:
+
+# Réseau commun pour que les services puissent communiquer
+networks:
+  famtree:
+    driver: bridge  # Crée un réseau automatiquement
+   

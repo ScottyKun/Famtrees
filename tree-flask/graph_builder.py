@@ -24,7 +24,7 @@ CANONICAL = {
     "PARENT_DE":     ("PERSONNE", "PERSONNE"),
     "CONJOINT_DANS": ("PERSONNE", "UNION"),
     "A_ENFANT":      ("UNION",    "PERSONNE"),
-    "FORME_FAMILLE": ("FAMILLE",  "UNION"),
+    "FORME_FAMILLE": ("UNION",  "FAMILLE"),
     "MEMBRE_DE":     ("PERSONNE", "FAMILLE"),
 }
 
