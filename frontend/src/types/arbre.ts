@@ -9,6 +9,7 @@ export interface ArbrePersonne {
   nom: string;
   sexe: "M" | "F" | "U";
   generation: number;
+  dateNaissance?: string | null;   // ISO "YYYY-MM-DD" (tree_generator._normalize_date) — ordonne les fratries
 
   // Classification V2 (ajoutée par lineage.py). Optionnels pour rester
   // compatibles avec un back non encore à jour.

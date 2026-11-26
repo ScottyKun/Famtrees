@@ -28,6 +28,22 @@ def _normalize_sexe(raw):
     return "U"
 
 
+def _normalize_date(raw):
+    """
+    Spring sérialise un LocalDate soit en "YYYY-MM-DD" (Jackson JavaTimeModule,
+    défaut Spring Boot), soit en tableau [YYYY, M, D] selon la config.
+    On renvoie toujours une chaîne ISO (ou None) : le front s'en sert pour
+    ordonner les fratries par âge.
+    """
+    if raw is None:
+        return None
+    if isinstance(raw, (list, tuple)) and len(raw) >= 3:
+        return f"{int(raw[0]):04d}-{int(raw[1]):02d}-{int(raw[2]):02d}"
+    if isinstance(raw, dict) and "year" in raw:
+        return f"{int(raw['year']):04d}-{int(raw.get('monthValue', raw.get('month', 1))):02d}-{int(raw.get('dayOfMonth', raw.get('day', 1))):02d}"
+    return str(raw)[:10]
+
+
 def build_tree(data, root_id):
     """
     Paramètres
@@ -75,6 +91,7 @@ def build_tree(data, root_id):
             "nom":                   node["data"].get("nom"),
             "prenom":                node["data"].get("prenom"),
             "sexe":                  _normalize_sexe(node["data"].get("sexe")),
+            "dateNaissance":         _normalize_date(node["data"].get("dateNaissance")),
             "generation":            None,
             "unions":                [],
             "children_out_of_union": [],
