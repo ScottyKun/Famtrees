@@ -2,4 +2,4 @@ export * from "./personne";
 export * from "./union";
 export * from "./famille";
 export * from "./arbre";
-export * from "./arbrePostgres";
+export * from "./arbrePostgres";export * from "./auth";

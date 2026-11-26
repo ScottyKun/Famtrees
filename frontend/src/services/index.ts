@@ -1,4 +1,5 @@
 export { personneService } from "./personneService";
 export { familleService }  from "./familleService";
 export { unionService }    from "./unionService";
-export { arbreService }    from "./arbreService";
+export { arbreService }    from "./arbreService";export { authService }     from "./authService";
+export { userService }     from "./userService";

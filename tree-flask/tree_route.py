@@ -1,11 +1,14 @@
+import os
 from flask import Blueprint, jsonify, request
 import requests
 from tree_generator import build_tree
 from lineage import is_visible, required_hops
+from auth import spring_headers
 
 tree_bp = Blueprint("tree", __name__)
 
-SPRING_BASE_URL = "http://localhost:8070/api/arbres"
+# URL de Spring vue depuis Flask : localhost en dev, nom du service Docker en prod
+SPRING_BASE_URL = os.environ.get("SPRING_URL", "http://localhost:8070").rstrip("/") + "/api/arbres"
 
 # Cap de sécurité quand aucun filtre n'est demandé (vue "arbre complet").
 # Volontairement large plutôt qu'illimité : évite un scan sans borne sur une
@@ -128,8 +131,10 @@ def get_tree(root_id):
 
     try:
         spring_url = f"{SPRING_BASE_URL}/{root_id}"
-        response = requests.get(spring_url, params={"depth": hops})
+        response = requests.get(spring_url, params={"depth": hops}, headers=spring_headers(), timeout=15)
 
+        if response.status_code in (401, 403):
+            return jsonify({"error": "Non authentifié auprès de Spring"}), response.status_code
         if response.status_code != 200:
             return jsonify({
                 "error":   "Erreur Spring API",
